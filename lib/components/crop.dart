@@ -1,4 +1,5 @@
 import 'package:flame/components.dart';
+import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/sprite.dart';
 import 'package:flame/flame.dart';
@@ -14,6 +15,7 @@ enum CropType {
 
 class Crop extends PositionComponent {
     static final _paint = Paint()..color = Colors.white;
+    final textRenderer = TextPaint(style: TextStyle(fontSize: 12, color: BasicPalette.black.color),);
     CropType type;
     int growthStage = 0;
     bool isHarvestable = false;
@@ -31,13 +33,18 @@ class Crop extends PositionComponent {
     @override
     Future<void> onLoad() async {
         // Load crop-specific assets
-        if (type == CropType.wheat) {
-            final wheatSpriteSheet = await Flame.images.load("wheat_spritesheet.png");
-            final spriteSheet = SpriteSheet(image: wheatSpriteSheet, srcSize: Vector2.all(340));
-            growthStages = spriteSheet;
-        } else {
-            // TODO: Implement spritesheets for other crops
-        }
+        // TODO: Implement spritesheets for other crops
+        final defaultSpriteSheet = await Flame.images.load("default_crop_spritesheet.png");
+        final spriteSheet = SpriteSheet(image: defaultSpriteSheet, srcSize: Vector2(680, 340));
+        growthStages = spriteSheet;
+
+      add(TextComponent(
+          text: type.name,
+          textRenderer: textRenderer,
+          anchor: Anchor.center,
+          position: Vector2(size.x / 2, size.y / 2),
+          ),
+        );
     }
 
     // Method to update the town state each frame
@@ -60,30 +67,7 @@ class Crop extends PositionComponent {
     void render(Canvas canvas) {
         super.render(canvas);
 
-        if (growthStages == null) {
-            // Generate color based on growth stage
-            // Assuming 3 growth stages (0 to 3)
-            switch (growthStage) {
-                case 0: 
-                    _paint.color = Colors.brown; // Seed or freshly planted
-                    break;
-                case 1: 
-                    _paint.color = const Color.fromARGB(255, 151, 119, 13); // Early growth
-                    break;
-                case 2: 
-                    _paint.color = Colors.green[600]!; // Mid-growth
-                    break;
-                case 3: 
-                    _paint.color = Colors.green[900]!; // Fully grown, ready to harvest
-                    break;
-                default: 
-                    _paint.color = Colors.white; // Fallback color
-            }
-
-            canvas.drawRect(size.toRect(), _paint);
-        } else {
-            growthStages!.getSprite(0, growthStage).render(canvas, size: size);
-        }
+        growthStages!.getSprite(0, growthStage).render(canvas, size: size);
     }
 
     void grow() {
