@@ -1,5 +1,5 @@
 name: virtual_farm
-description: "A new Flutter project."
+description: "A virtual farming game"
 publish_to: 'none'
 version: 0.1.0
 
@@ -18,3 +18,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
