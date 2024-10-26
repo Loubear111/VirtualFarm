@@ -16,9 +16,25 @@ class Town extends PositionComponent {
 
         add(
             Crop(type: CropType.wheat)
-            ..position = Vector2(size.x / 2, size.y / 2)
-            ..width = 50
-            ..height = 50
+            ..position = Vector2(100, size.y / 2)
+            ..width = 100
+            ..height = 100
+            ..anchor = Anchor.center,
+            );
+
+        add(
+            Crop(type: CropType.potatoes)
+            ..position = Vector2(200, size.y / 2)
+            ..width = 100
+            ..height = 100
+            ..anchor = Anchor.center,
+            );
+
+        add(
+            Crop(type: CropType.wheat)
+            ..position = Vector2(300, size.y / 2)
+            ..width = 100
+            ..height = 100
             ..anchor = Anchor.center,
             );
     }

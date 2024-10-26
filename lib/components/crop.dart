@@ -82,7 +82,7 @@ class Crop extends PositionComponent {
 
             canvas.drawRect(size.toRect(), _paint);
         } else {
-            growthStages!.getSprite(0, growthStage).render(canvas);
+            growthStages!.getSprite(0, growthStage).render(canvas, size: size);
         }
     }
 
