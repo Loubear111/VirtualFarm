@@ -1,4 +1,5 @@
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/sprite.dart';
@@ -13,10 +14,11 @@ enum CropType {
     // Add more crop types as needed
 }
 
-class Crop extends PositionComponent {
+class Crop extends PositionComponent with TapCallbacks {
     static final _paint = Paint()..color = Colors.white;
     final textRenderer = TextPaint(style: TextStyle(fontSize: 12, color: BasicPalette.black.color),);
     CropType type;
+    final VoidCallback? onHarvest; // Callback for notifying when harvested
     int growthStage = 0;
     bool isHarvestable = false;
 
@@ -28,6 +30,7 @@ class Crop extends PositionComponent {
 
     Crop({
         required this.type,
+        this.onHarvest,
     });
 
     @override
@@ -70,10 +73,27 @@ class Crop extends PositionComponent {
         growthStages!.getSprite(0, growthStage).render(canvas, size: size);
     }
 
+    @override
+    void onTapDown(TapDownEvent event) {
+        tryHarvest();
+    }
+
     void grow() {
         if (growthStage < maxGrowthStage) {
             growthStage++;
             isHarvestable = (growthStage == maxGrowthStage);
         }
+    }
+
+    void tryHarvest() {
+        if (isHarvestable) {
+            onHarvest?.call();
+
+            removeFromParent();
+        }
+    }
+
+    static String cropTypeToName(CropType type) {
+        return type.name[0].toUpperCase() + type.name.substring(1);
     }
 }
