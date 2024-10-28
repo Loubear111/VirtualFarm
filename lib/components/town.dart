@@ -9,6 +9,7 @@ import 'crop.dart';
 class Town extends PositionComponent with flame_events.TapCallbacks, flame_events.PointerMoveCallbacks {
     // TODO: Can we implement the tiling in its own class to help slim down the Town object?
     final Vector2 tileSize = Vector2(100, 50);
+    final Vector2 maxTileSize = Vector2(100, 200);
     late final double xStart;
     late final double yStart;
     final textRenderer = TextPaint(style: TextStyle(fontSize: 12, color: BasicPalette.white.color),);
@@ -75,10 +76,9 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         Point<int> gridCoords = calcGrid(event.canvasPosition.x, event.canvasPosition.y);
 
         if (buildings[gridCoords] == null) {
-            buildings[gridCoords] = Crop(type: CropType.carrots, onHarvest: () {handleHarvest(CropType.carrots);})
-                ..position = calcTile(gridCoords.x, gridCoords.y)
-                ..width = tileSize.x
-                ..height = tileSize.y
+            Crop newCrop = Crop(type: CropType.wheat, maxSize: maxTileSize, onHarvest: () {handleHarvest(CropType.wheat);});
+            buildings[gridCoords] = newCrop
+                ..position = calcTile(gridCoords.x, gridCoords.y, newCrop.scaledImgSize.y)
                 ..anchor = Anchor.center;         
             add(buildings[gridCoords]!);
         } else {
@@ -100,6 +100,13 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
     /// Update any required children when they are updated since we keep references to all buildings
     @override
     void onChildrenChanged(Component child, ChildrenChangeType type) {
+        for (var entry in buildings.entries) {
+            // Set priority based on isometric grid position.
+            // Higher y should be rendered on top, so we combine y and x to create a unique priority.
+            // The formula ensures tiles with larger y values have higher priority.
+            entry.value.priority = entry.key.y * 1000 + entry.key.x;
+        }
+
         if (type == ChildrenChangeType.removed) {
             if (child is Crop) {
                 Crop crop = child as Crop;
@@ -119,9 +126,12 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
     ///   - y: The y-coordinate of the tile in grid space.
     /// 
     /// - Returns: A `Vector2` containing the x and y screen coordinates of the tile.
-    Vector2 calcTile(int x, int y) {
+    Vector2 calcTile(int x, int y, double imgHeight) {
         double xScreen = xStart + (x - y) * (tileSize.x / 2);
         double yScreen = yStart + (x + y) * (tileSize.y / 2);
+
+        var z_offset = maxTileSize.y - imgHeight;
+
         return Vector2(xScreen, yScreen);
     }
 
@@ -148,7 +158,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
             ..style = PaintingStyle.stroke
             ..strokeWidth = 2.0; // Set the outline width
 
-        Vector2 screenTile = calcTile(tile.x, tile.y);
+        Vector2 screenTile = calcTile(tile.x, tile.y, 50);
         // Calculate the position of the tile
         double x = screenTile.x - tileSize.x / 2;
         double y = screenTile.y - tileSize.y / 2;

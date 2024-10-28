@@ -22,6 +22,9 @@ class Crop extends PositionComponent implements Building {
     final String uuid = Uuid().v4();
     final textRenderer = TextPaint(style: TextStyle(fontSize: 12, color: BasicPalette.black.color),);
     CropType type;
+    Vector2 maxSize;
+    late final Vector2 cropImgSize;
+    late final Vector2 scaledImgSize;
     final VoidCallback? onHarvest; // Callback for notifying when harvested
     int growthStage = 0;
     bool isHarvestable = false;
@@ -34,24 +37,40 @@ class Crop extends PositionComponent implements Building {
 
     Crop({
         required this.type,
+        required this.maxSize,
         this.onHarvest,
-    });
+    }) {
+        if (type == CropType.wheat) {
+            cropImgSize = Vector2(64, 64);
+        } else {
+            cropImgSize = Vector2(680, 340);
+        }
+        double multiplier = maxSize.x / cropImgSize.x;
+        scaledImgSize = cropImgSize * multiplier;
+        size = scaledImgSize;
+    }
 
     @override
     Future<void> onLoad() async {
         // Load crop-specific assets
-        // TODO: Implement spritesheets for other crops
-        final defaultSpriteSheet = await Flame.images.load("default_crop_spritesheet.png");
-        final spriteSheet = SpriteSheet(image: defaultSpriteSheet, srcSize: Vector2(680, 340));
-        growthStages = spriteSheet;
+        if (type == CropType.wheat) {
+            final wheatSpriteSheet = await Flame.images.load("wheat_spritesheet.png");
+            final spriteSheet = SpriteSheet(image: wheatSpriteSheet, srcSize: cropImgSize);
+            growthStages = spriteSheet;
+        } else {
+            // TODO: Implement spritesheets for other crops
+            final defaultSpriteSheet = await Flame.images.load("default_crop_spritesheet.png");
+            final spriteSheet = SpriteSheet(image: defaultSpriteSheet, srcSize: cropImgSize);
+            growthStages = spriteSheet;
 
-      add(TextComponent(
-          text: type.name,
-          textRenderer: textRenderer,
-          anchor: Anchor.center,
-          position: Vector2(size.x / 2, size.y / 2),
-          ),
-        );
+            add(TextComponent(
+                text: type.name,
+                textRenderer: textRenderer,
+                anchor: Anchor.center,
+                position: Vector2(size.x / 2, size.y / 2),
+                ),
+            );
+        }
     }
 
     // Method to update the town state each frame
@@ -74,7 +93,9 @@ class Crop extends PositionComponent implements Building {
     void render(Canvas canvas) {
         super.render(canvas);
 
-        growthStages!.getSprite(0, growthStage).render(canvas, size: size);
+        size = scaledImgSize;
+
+        growthStages!.getSprite(0, growthStage).render(canvas, size: scaledImgSize);
     }
 
     @override
