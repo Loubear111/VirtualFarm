@@ -4,6 +4,8 @@ import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/sprite.dart';
 import 'package:flame/flame.dart';
+import 'package:uuid/uuid.dart';
+import 'package:virtual_farm/components/building.dart';
 
 // Define an enum for crop types
 enum CropType {
@@ -14,8 +16,10 @@ enum CropType {
     // Add more crop types as needed
 }
 
-class Crop extends PositionComponent with TapCallbacks {
+class Crop extends PositionComponent implements Building {
     static final _paint = Paint()..color = Colors.white;
+    @override
+    final String uuid = Uuid().v4();
     final textRenderer = TextPaint(style: TextStyle(fontSize: 12, color: BasicPalette.black.color),);
     CropType type;
     final VoidCallback? onHarvest; // Callback for notifying when harvested
@@ -74,7 +78,7 @@ class Crop extends PositionComponent with TapCallbacks {
     }
 
     @override
-    void onTapDown(TapDownEvent event) {
+    void onTap() {
         tryHarvest();
     }
 

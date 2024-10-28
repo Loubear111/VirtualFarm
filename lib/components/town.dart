@@ -3,13 +3,13 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart' as flame_events;
 import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
+import 'package:virtual_farm/components/building.dart';
 import 'crop.dart';
 
 class Town extends PositionComponent with flame_events.TapCallbacks, flame_events.PointerMoveCallbacks {
     final Vector2 tileSize = Vector2(100, 50);
     late final double xStart;
     late final double yStart;
-    List<PositionComponent> buildings; // List of buildings in the town
     final textRenderer = TextPaint(style: TextStyle(fontSize: 12, color: BasicPalette.white.color),);
     // Dictionary to track the count of each crop type
     final Map<CropType, int> cropCounts = {
@@ -19,12 +19,13 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         CropType.potatoes: 0,
     };
 
+    // A dictionary which holds all the different buildings in the town
+    final Map<Point<int>, Building> buildings = {};
+
     final Map<CropType, TextComponent> cropCountText = {};
     Point<int>? hoveredTile; // To keep track of the currently hovered tile
 
-    Town({
-        this.buildings = const [],
-    });
+    Town();
 
     @override
     Future<void> onLoad() async {
@@ -71,14 +72,16 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
     void onTapDown(flame_events.TapDownEvent event) {
         Point<int> gridCoords = calcGrid(event.canvasPosition.x, event.canvasPosition.y);
 
-        // TODO: There's a bug where the click event doesn't get captured by the right box, so we need to handle draw order
-        add(
-        Crop(type: CropType.carrots, onHarvest: () {handleHarvest(CropType.carrots);})
-            ..position = calcTile(gridCoords.x, gridCoords.y)
-            ..width = tileSize.x
-            ..height = tileSize.y
-            ..anchor = Anchor.center,
-        );
+        if (buildings[gridCoords] == null) {
+            buildings[gridCoords] = Crop(type: CropType.carrots, onHarvest: () {handleHarvest(CropType.carrots);})
+                ..position = calcTile(gridCoords.x, gridCoords.y)
+                ..width = tileSize.x
+                ..height = tileSize.y
+                ..anchor = Anchor.center;         
+            add(buildings[gridCoords]!);
+        } else {
+            buildings[gridCoords]!.onTap();
+        }
     }
 
     @override
@@ -90,6 +93,18 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
 
         // Convert to grid coordinates
         hoveredTile = calcGrid(xScreen, yScreen);
+    }
+
+    /// Update any required children when they are updated since we keep references to all buildings
+    @override
+    void onChildrenChanged(Component child, ChildrenChangeType type) {
+        if (type == ChildrenChangeType.removed) {
+            if (child is Crop) {
+                Crop crop = child as Crop;
+                var buildingRemovedPoint = buildings.entries.firstWhere((element) => element.value.uuid == crop.uuid).key;
+                buildings.remove(buildingRemovedPoint);
+            }
+        }
     }
 
     /// Calculates the screen space coordinates of a tile based on its grid coordinates.
@@ -144,6 +159,19 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         );
     }
 
+    /// TODO: Is there a better way we can do this so we don't have to pass CropType as a parameter...?
+    /// Updates the crop count and display for a harvested crop.
+    ///
+    /// This function is called whenever a crop of the specified `type` is harvested.
+    /// It increments the count for that crop type in the `cropCounts` map and updates
+    /// the corresponding text display to reflect the new count.
+    ///
+    /// - Parameters:
+    ///   - type: The `CropType` of the harvested crop.
+    ///
+    /// Updates:
+    /// - `cropCounts[type]`: Increments the count for the specified crop type.
+    /// - `cropCountText[type].text`: Updates the on-screen text to show the new crop count.
     void handleHarvest(CropType type) {
         cropCounts[type] = (cropCounts[type] ?? 0) + 1;
 
