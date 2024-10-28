@@ -7,6 +7,7 @@ import 'package:virtual_farm/components/building.dart';
 import 'crop.dart';
 
 class Town extends PositionComponent with flame_events.TapCallbacks, flame_events.PointerMoveCallbacks {
+    // TODO: Can we implement the tiling in its own class to help slim down the Town object?
     final Vector2 tileSize = Vector2(100, 50);
     late final double xStart;
     late final double yStart;
@@ -35,6 +36,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         xStart = size.x / 2;
         yStart = tileSize.y;
 
+        // Add a text interface displaying crop score at the top of the town (this should probably be in `game.dart`...?)
         double offsetX = 0.0; // Starting position for horizontal alignment
         double spacing = 20.0; // Space between text components
         CropType.values.forEach((crop) {
