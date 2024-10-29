@@ -27,7 +27,6 @@ class Crop extends PositionComponent implements Building {
     late final Vector2 scaledImgSize;
     final VoidCallback? onHarvest; // Callback for notifying when harvested
     int growthStage = 0;
-    bool isHarvestable = false;
 
     double _growthTimer = 0.0;       // Timer to track crop growth
     final double growthDuration = 5; // Duration for each stage (in seconds)
@@ -39,6 +38,7 @@ class Crop extends PositionComponent implements Building {
         required this.type,
         required this.maxSize,
         this.onHarvest,
+        this.growthStage = 0,
     }) {
         if (type == CropType.wheat) {
             cropImgSize = Vector2(64, 64);
@@ -106,16 +106,19 @@ class Crop extends PositionComponent implements Building {
     void grow() {
         if (growthStage < maxGrowthStage) {
             growthStage++;
-            isHarvestable = (growthStage == maxGrowthStage);
         }
     }
 
     void tryHarvest() {
-        if (isHarvestable) {
+        if (isHarvestable()) {
             onHarvest?.call();
 
             removeFromParent();
         }
+    }
+
+    bool isHarvestable() {
+        return (growthStage == maxGrowthStage);
     }
 
     static String cropTypeToName(CropType type) {

@@ -65,21 +65,34 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
     void render(Canvas canvas) {
         super.render(canvas);
         // Draw town-specific elements like background, borders, etc.
-        if (hoveredTile != null) {
-            // Draw outline for the hovered tile
-            //drawHoveredTileOutline(canvas, hoveredTile!);
-        }
+
+        // Define the paint for the outline
+        final outlinePaint = Paint()
+            ..color = Colors.blue // Choose the color for the outline
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.0; // Adjust the thickness of the outline
+
+        // Draw the rectangle outline around the entire Town component
+        canvas.drawRect(
+            Rect.fromLTWH(0, 0, size.x, size.y),
+            outlinePaint,
+        );
     }
 
     @override
     void onTapDown(flame_events.TapDownEvent event) {
-        Point<int> gridCoords = calcGrid(event.canvasPosition.x, event.canvasPosition.y);
+        Point<int> gridCoords = calcGrid(event.localPosition.x, event.localPosition.y);
 
         if (buildings[gridCoords] == null) {
-            Crop newCrop = Crop(type: CropType.wheat, maxSize: maxTileSize, onHarvest: () {handleHarvest(CropType.wheat);});
+            Random random = Random();
+
+            // TODO: Allow planting of other crops
+            Crop newCrop;
+            newCrop = Crop(type: CropType.wheat, maxSize: maxTileSize, onHarvest: () {handleHarvest(CropType.wheat);});
             buildings[gridCoords] = newCrop
                 ..position = calcTile(gridCoords.x, gridCoords.y, newCrop.scaledImgSize.y)
-                ..anchor = Anchor.center;         
+                ..anchor = Anchor.bottomCenter; 
+
             add(buildings[gridCoords]!);
         } else {
             buildings[gridCoords]!.onTap();
@@ -90,8 +103,8 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
     void onPointerMove(flame_events.PointerMoveEvent event) {
         // Do something in response to the mouse move (e.g. update coordinates)
         // Get the mouse position in screen space
-        double xScreen = event.canvasPosition.x;
-        double yScreen = event.canvasPosition.y;
+        double xScreen = event.localPosition.x;
+        double yScreen = event.localPosition.y;
 
         // Convert to grid coordinates
         hoveredTile = calcGrid(xScreen, yScreen);
@@ -130,8 +143,6 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         double xScreen = xStart + (x - y) * (tileSize.x / 2);
         double yScreen = yStart + (x + y) * (tileSize.y / 2);
 
-        var z_offset = maxTileSize.y - imgHeight;
-
         return Vector2(xScreen, yScreen);
     }
 
@@ -149,26 +160,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
     Point<int> calcGrid(double xScreen, double yScreen) {
         double x = ((xScreen - xStart) / tileSize.x + (yScreen - yStart) / tileSize.y);
         double y = ((yScreen - yStart) / tileSize.y - (xScreen - xStart) / tileSize.x);
-        return Point<int>(x.round(), y.round());
-    }
-
-    void drawHoveredTileOutline(Canvas canvas, Point<int> tile) {
-        final Paint paint = Paint()
-            ..color = Colors.red // Set the color of the outline
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2.0; // Set the outline width
-
-        Vector2 screenTile = calcTile(tile.x, tile.y, 50);
-        // Calculate the position of the tile
-        double x = screenTile.x - tileSize.x / 2;
-        double y = screenTile.y - tileSize.y / 2;
-        
-
-        // Draw the rectangle outline
-        canvas.drawRect(
-            Rect.fromLTWH(x, y, tileSize.x, tileSize.y),
-            paint,
-        );
+        return Point<int>(x.ceil(), y.ceil());
     }
 
     /// TODO: Is there a better way we can do this so we don't have to pass CropType as a parameter...?
