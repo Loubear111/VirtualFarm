@@ -3,16 +3,18 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart' as flame_events;
 import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
-import 'package:virtual_farm/components/building.dart';
-import 'crop.dart';
+import 'package:virtual_farm/components/interactive_object.dart';
+import 'crops/crop.dart';
+import 'package:virtual_farm/tile_grid.dart';
+import 'crops/crop_zone.dart';
 
 class Town extends PositionComponent with flame_events.TapCallbacks, flame_events.PointerMoveCallbacks {
-    // TODO: Can we implement the tiling in its own class to help slim down the Town object?
     final Vector2 tileSize = Vector2(100, 50);
     final Vector2 maxTileSize = Vector2(100, 200);
-    late final double xStart;
-    late final double yStart;
     final textRenderer = TextPaint(style: TextStyle(fontSize: 12, color: BasicPalette.white.color),);
+    late final TileGrid tileGrid;
+    late CropZone cropZone;
+
     // Dictionary to track the count of each crop type
     final Map<CropType, int> cropCounts = {
         CropType.wheat: 0,
@@ -22,7 +24,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
     };
 
     // A dictionary which holds all the different buildings in the town
-    final Map<Point<int>, Building> buildings = {};
+    final Map<Point<int>, InteractiveObject> buildings = {};
 
     final Map<CropType, TextComponent> cropCountText = {};
     Point<int>? hoveredTile; // To keep track of the currently hovered tile
@@ -34,8 +36,9 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         // Load town-specific assets (e.g., buildings, decorations)
         await super.onLoad();
 
-        xStart = size.x / 2;
-        yStart = tileSize.y;
+        double xStart = size.x / 2;
+        double yStart = tileSize.y;
+        tileGrid = TileGrid(tileSize: tileSize, xStart: xStart, yStart: yStart);
 
         // Add a text interface displaying crop score at the top of the town (this should probably be in `game.dart`...?)
         double offsetX = 0.0; // Starting position for horizontal alignment
@@ -51,6 +54,32 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
             add(cropCountText[crop]!);
             offsetX += cropCountText[crop]!.size.x + spacing;
         });
+
+        Point<int> cropZoneLocation = const Point<int>(5, 5);
+        cropZone = CropZone(
+            topLeft: cropZoneLocation, 
+            tileSize: tileSize,
+            maxTileSize: maxTileSize,
+            onHarvest: (CropType type, int quantity) {
+                // Update storage count in a dedicated storage zone or SiloZone
+                cropCounts[type] = (cropCounts[type] ?? 0) + quantity;
+
+                cropCountText[type]!.text = "${Crop.cropTypeToName(type)}: ${cropCounts[type]}"; 
+                // For example, if we had a storage zone:
+                // storageZone.addCrop(type, quantity);
+            });
+
+        // Register each tile covered by the CropZone in the buildings dictionary
+        for (int x = cropZone.topLeft.x; x < cropZone.topLeft.x + cropZone.gridSize.x; x++) {
+            for (int y = cropZone.topLeft.y; y < cropZone.topLeft.y + cropZone.gridSize.y; y++) {
+                buildings[Point<int>(x, y)] = cropZone;
+            }
+        }
+
+        add(cropZone
+            ..anchor = Anchor.topLeft
+            ..size = Vector2(tileSize.x * cropZone.gridSize.x, tileSize.y * cropZone.gridSize.y)
+            ..position = tileGrid.calcTile(cropZoneLocation.x, cropZoneLocation.y));
     }
 
     // Method to update the town state each frame
@@ -81,21 +110,12 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
 
     @override
     void onTapDown(flame_events.TapDownEvent event) {
-        Point<int> gridCoords = calcGrid(event.localPosition.x, event.localPosition.y);
+        Point<int> gridCoords = tileGrid.calcGrid(event.localPosition.x, event.localPosition.y);
 
         if (buildings[gridCoords] == null) {
-            Random random = Random();
-
-            // TODO: Allow planting of other crops
-            Crop newCrop;
-            newCrop = Crop(type: CropType.wheat, maxSize: maxTileSize, onHarvest: () {handleHarvest(CropType.wheat);});
-            buildings[gridCoords] = newCrop
-                ..position = calcTile(gridCoords.x, gridCoords.y, newCrop.scaledImgSize.y)
-                ..anchor = Anchor.bottomCenter; 
-
-            add(buildings[gridCoords]!);
+            // TODO: Allow planting of other buildings
         } else {
-            buildings[gridCoords]!.onTap();
+            buildings[gridCoords]!.onTap(event.localPosition);
         }
     }
 
@@ -107,7 +127,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         double yScreen = event.localPosition.y;
 
         // Convert to grid coordinates
-        hoveredTile = calcGrid(xScreen, yScreen);
+        hoveredTile = tileGrid.calcGrid(xScreen, yScreen);
     }
 
     /// Update any required children when they are updated since we keep references to all buildings
@@ -121,64 +141,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         }
 
         if (type == ChildrenChangeType.removed) {
-            if (child is Crop) {
-                Crop crop = child as Crop;
-                var buildingRemovedPoint = buildings.entries.firstWhere((element) => element.value.uuid == crop.uuid).key;
-                buildings.remove(buildingRemovedPoint);
-            }
+            // Remove any children if needed
         }
-    }
-
-    /// Calculates the screen space coordinates of a tile based on its grid coordinates.
-    /// 
-    /// This function converts a tile's grid coordinates `(x, y)` into screen space
-    /// coordinates `(xScreen, yScreen)` based on the provided offsets and tile size.
-    /// 
-    /// - Parameters:
-    ///   - x: The x-coordinate of the tile in grid space.
-    ///   - y: The y-coordinate of the tile in grid space.
-    /// 
-    /// - Returns: A `Vector2` containing the x and y screen coordinates of the tile.
-    Vector2 calcTile(int x, int y, double imgHeight) {
-        double xScreen = xStart + (x - y) * (tileSize.x / 2);
-        double yScreen = yStart + (x + y) * (tileSize.y / 2);
-
-        return Vector2(xScreen, yScreen);
-    }
-
-    /// Calculates the grid coordinates of a tile based on screen space coordinates.
-    /// 
-    /// This function converts screen space coordinates `(xScreen, yScreen)` back to
-    /// the tile’s grid coordinates `(x, y)` by reversing the transformation applied
-    /// in `calcTile()`. This is useful for detecting which tile a user tapped.
-    /// 
-    /// - Parameters:
-    ///   - xScreen: The x-coordinate in screen space.
-    ///   - yScreen: The y-coordinate in screen space.
-    /// 
-    /// - Returns: A `Point<int>` representing the tile’s grid coordinates.
-    Point<int> calcGrid(double xScreen, double yScreen) {
-        double x = ((xScreen - xStart) / tileSize.x + (yScreen - yStart) / tileSize.y);
-        double y = ((yScreen - yStart) / tileSize.y - (xScreen - xStart) / tileSize.x);
-        return Point<int>(x.ceil(), y.ceil());
-    }
-
-    /// TODO: Is there a better way we can do this so we don't have to pass CropType as a parameter...?
-    /// Updates the crop count and display for a harvested crop.
-    ///
-    /// This function is called whenever a crop of the specified `type` is harvested.
-    /// It increments the count for that crop type in the `cropCounts` map and updates
-    /// the corresponding text display to reflect the new count.
-    ///
-    /// - Parameters:
-    ///   - type: The `CropType` of the harvested crop.
-    ///
-    /// Updates:
-    /// - `cropCounts[type]`: Increments the count for the specified crop type.
-    /// - `cropCountText[type].text`: Updates the on-screen text to show the new crop count.
-    void handleHarvest(CropType type) {
-        cropCounts[type] = (cropCounts[type] ?? 0) + 1;
-
-        cropCountText[type]!.text = "${Crop.cropTypeToName(type)}: ${cropCounts[type]}"; 
     }
 }

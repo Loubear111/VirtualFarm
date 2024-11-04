@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flame/sprite.dart';
 import 'package:flame/flame.dart';
 import 'package:uuid/uuid.dart';
-import 'package:virtual_farm/components/building.dart';
+import 'package:virtual_farm/components/interactive_object.dart';
 
 // Define an enum for crop types
 enum CropType {
@@ -16,7 +16,7 @@ enum CropType {
     // Add more crop types as needed
 }
 
-class Crop extends PositionComponent implements Building {
+class Crop extends PositionComponent implements InteractiveObject {
     static final _paint = Paint()..color = Colors.white;
     @override
     final String uuid = Uuid().v4();
@@ -25,7 +25,8 @@ class Crop extends PositionComponent implements Building {
     Vector2 maxSize;
     late final Vector2 cropImgSize;
     late final Vector2 scaledImgSize;
-    final VoidCallback? onHarvest; // Callback for notifying when harvested
+    // Callback for when a crop is harvested
+    final void Function(CropType type, int quantity) onHarvest;
     int growthStage = 0;
 
     double _growthTimer = 0.0;       // Timer to track crop growth
@@ -37,7 +38,7 @@ class Crop extends PositionComponent implements Building {
     Crop({
         required this.type,
         required this.maxSize,
-        this.onHarvest,
+        required this.onHarvest,
         this.growthStage = 0,
     }) {
         if (type == CropType.wheat) {
@@ -99,7 +100,7 @@ class Crop extends PositionComponent implements Building {
     }
 
     @override
-    void onTap() {
+    void onTap(Vector2 tapPosition) {
         tryHarvest();
     }
 
@@ -111,7 +112,7 @@ class Crop extends PositionComponent implements Building {
 
     void tryHarvest() {
         if (isHarvestable()) {
-            onHarvest?.call();
+            onHarvest(type, 1);
 
             removeFromParent();
         }
