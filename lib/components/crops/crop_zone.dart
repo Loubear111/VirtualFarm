@@ -56,7 +56,8 @@ class CropZone extends PositionComponent implements InteractiveObject {
     @override
     void onTap(Vector2 tapPosition) {
         // Convert the tap position to CropZone's local space
-        Vector2 tapPositionInZone = tapPosition - this.position;
+        Vector2 tapPositionInZone = tapPosition - position + size / 2;
+        //Vector2 tapPositionInZone = tapPosition;
 
         // Convert the local tap position to grid coordinates within CropZone
         Point<int> tile = tileGrid.calcGrid(tapPositionInZone.x, tapPositionInZone.y);

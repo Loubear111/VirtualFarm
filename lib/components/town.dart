@@ -55,7 +55,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
             offsetX += cropCountText[crop]!.size.x + spacing;
         });
 
-        Point<int> cropZoneLocation = const Point<int>(5, 5);
+        Point<int> cropZoneLocation = const Point<int>(2, 2);
         cropZone = CropZone(
             topLeft: cropZoneLocation, 
             tileSize: tileSize,
@@ -77,7 +77,7 @@ class Town extends PositionComponent with flame_events.TapCallbacks, flame_event
         }
 
         add(cropZone
-            ..anchor = Anchor.topLeft
+            ..anchor = Anchor.center
             ..size = Vector2(tileSize.x * cropZone.gridSize.x, tileSize.y * cropZone.gridSize.y)
             ..position = tileGrid.calcTile(cropZoneLocation.x, cropZoneLocation.y));
     }
