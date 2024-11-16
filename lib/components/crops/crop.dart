@@ -13,6 +13,7 @@ enum CropType {
     corn,
     potatoes,
     carrots,
+    pumpkin,
     // Add more crop types as needed
 }
 
@@ -58,7 +59,28 @@ class Crop extends PositionComponent implements InteractiveObject {
             final wheatSpriteSheet = await Flame.images.load("wheat_spritesheet.png");
             final spriteSheet = SpriteSheet(image: wheatSpriteSheet, srcSize: cropImgSize);
             growthStages = spriteSheet;
-        } else {
+        }
+        else if (type == CropType.carrots) {
+            final carrotSpriteSheet = await Flame.images.load("carrot_spritesheet.png");
+            final spriteSheet = SpriteSheet(image: carrotSpriteSheet, srcSize: cropImgSize);
+            growthStages = spriteSheet;
+        }
+        else if (type == CropType.pumpkin) {
+            final pumpkinSpriteSheet = await Flame.images.load("pumpkin_spritesheet.png");
+            final spriteSheet = SpriteSheet(image: pumpkinSpriteSheet, srcSize: cropImgSize);
+            growthStages = spriteSheet;
+        }
+        else if (type == CropType.corn) {
+            final cornSpriteSheet = await Flame.images.load("corn_spritesheet.png");
+            final spriteSheet = SpriteSheet(image: cornSpriteSheet, srcSize: cropImgSize);
+            growthStages = spriteSheet;
+        }
+        else if (type == CropType.potatoes) {
+            final potatoSpriteSheet = await Flame.images.load("potato_spritesheet.png");
+            final spriteSheet = SpriteSheet(image: potatoSpriteSheet, srcSize: cropImgSize);
+            growthStages = spriteSheet;
+        }
+        else {
             // TODO: Implement spritesheets for other crops
             final defaultSpriteSheet = await Flame.images.load("default_crop_spritesheet.png");
             final spriteSheet = SpriteSheet(image: defaultSpriteSheet, srcSize: cropImgSize);
